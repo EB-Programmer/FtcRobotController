@@ -1,11 +1,18 @@
 package org.firstinspires.ftc.teamcode;
 
+import static org.firstinspires.ftc.teamcode.IntakeMotorConstants.INTAKE_MOTOR_POWER;
+import static org.firstinspires.ftc.teamcode.IntakeMotorConstants.INTAKE_MOTOR_REVOLUTION_TIME;
+import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_MAX_EXTENSION;
+import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_MAX_HEIGHT;
+
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
 
 public class EbTestRobotComponents extends OpMode {
 
@@ -23,6 +30,9 @@ public class EbTestRobotComponents extends OpMode {
     private Servo climbLiftServo = null;
     private DigitalChannel intakeSwitch = null;
     private ColorSensor colorSensor = null;
+    private ElapsedTime intakeMotorTimer;
+    private boolean intakeIsRunning;
+    private boolean usingIntake;
 
 
 
@@ -83,7 +93,8 @@ public class EbTestRobotComponents extends OpMode {
         //Intake Roller Limit Switch
         intakeSwitch = hardwareMap.get(DigitalChannel.class, "Intake_switch");
 
-
+        intakeMotorTimer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+        usingIntake = false;
     }
 
     @Override
@@ -94,8 +105,6 @@ public class EbTestRobotComponents extends OpMode {
     @Override
     public void loop() {
         final double POWER_PERCENT = .25;
-        final double INTAKE_SLIDE_MAX_EXTENSION = 1600;
-        final double MAX_SLIDE_HEIGHT = 3175;
 
         double leftVertSlidePower = (gamepad1.dpad_left?1:0)*POWER_PERCENT;
         double rightVertSlidePower = (gamepad1.dpad_right?1:0)*POWER_PERCENT;
@@ -105,11 +114,24 @@ public class EbTestRobotComponents extends OpMode {
         double backLeftMotorPower = (gamepad1.x?1:0)*POWER_PERCENT;
         double backRightMotorPower = (gamepad1.a?1:0)*POWER_PERCENT;
 
-        if (slideVertLeftMotor.getCurrentPosition()<MAX_SLIDE_HEIGHT) {
+        if(usingIntake) {
+            if (gamepad1.right_bumper) {
+                usingIntake = false;
+            } else {
+                runIntakeMotor();
+            }
+        } else {
+            if (gamepad1.right_bumper) {
+                usingIntake = true;
+                runIntakeMotor();
+            }
+        }
+
+        if (slideVertLeftMotor.getCurrentPosition()<VERT_MAX_HEIGHT) {
             slideVertLeftMotor.setPower(leftVertSlidePower);
         }
 
-        if (slideVertRightMotor.getCurrentPosition()<MAX_SLIDE_HEIGHT) {
+        if (slideVertRightMotor.getCurrentPosition()<VERT_MAX_HEIGHT) {
             slideVertRightMotor.setPower(rightVertSlidePower);
         }
 
@@ -123,4 +145,24 @@ public class EbTestRobotComponents extends OpMode {
         backRightMotor.setPower(backRightMotorPower);
 
     }
+
+    private void runIntakeMotor() {
+        double motorPower = 0;
+        usingIntake = true;
+        if (intakeIsRunning) {
+            if (intakeMotorTimer.time() < INTAKE_MOTOR_REVOLUTION_TIME) {
+                motorPower = INTAKE_MOTOR_POWER;
+            } else {
+                intakeIsRunning = false;
+                intakeMotorTimer.reset();
+            }
+        } else {
+            if (intakeMotorTimer.time() > INTAKE_MOTOR_REVOLUTION_TIME) {
+                motorPower = INTAKE_MOTOR_POWER;
+                intakeMotorTimer.reset();
+            }
+        }
+        intakeFrameServo.setPower(motorPower);
+    }
+
 }
