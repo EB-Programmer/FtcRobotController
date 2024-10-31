@@ -8,11 +8,6 @@ public final class ClawConstants {
     static final double CLAW_CHAMBER_HANG_POSITION = .2;
     static final double CLAW_WALL_SPECIMEN_POSITION = 0;
 
-    static enum DIRECTION {
-        MOVE_FORWARD,
-        MOVE_BACKWARD
-    }
-
     //claw positions
     static final double CLAW_OPEN = 0;
     static final double CLAW_CLOSE = .5;

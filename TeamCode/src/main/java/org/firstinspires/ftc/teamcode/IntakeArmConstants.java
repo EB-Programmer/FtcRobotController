@@ -2,12 +2,11 @@ package org.firstinspires.ftc.teamcode;
 
 public final class IntakeArmConstants {
 
-    static final double INTAKE_ARM_RESTING = 0;
-    static final double INTAKE_ARM_EXCHANGE = .2;
-    static final double INTAKE_ARM_EXTEND = .5;
-    static final double INTAKE_ARM_ACTIVE = 1;
-    static final double TIME_FOR_INTAKE_CLEARANCE = 1.0;
-    static final double TIME_FOR_EXCHANGE_POSITION = 1.5;
+    static final double INTAKE_ARM_EXCHANGE_POSITION = .2;
+    static final double INTAKE_ARM_CLEARANCE_POSITION = .5;
+    static final double INTAKE_ARM_ACTIVE_POSITION = 1;
+    static final double INTAKE_ARM_CLEARANCE_TIME = .75;
+    static final double INTAKE_ARM_EXCHANGE_TIME = 1.5;
 
     private IntakeArmConstants() {
     }

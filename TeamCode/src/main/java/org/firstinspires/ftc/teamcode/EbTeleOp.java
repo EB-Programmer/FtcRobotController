@@ -8,22 +8,25 @@ import static org.firstinspires.ftc.teamcode.ClawConstants.CLAW_EXCHANGE_POSITIO
 import static org.firstinspires.ftc.teamcode.ClawConstants.CLAW_OPEN;
 import static org.firstinspires.ftc.teamcode.ClawConstants.CLAW_CHAMBER_HANG_POSITION;
 import static org.firstinspires.ftc.teamcode.ClawConstants.CLAW_WALL_SPECIMEN_POSITION;
-import static org.firstinspires.ftc.teamcode.IntakeArmConstants.INTAKE_ARM_ACTIVE;
-import static org.firstinspires.ftc.teamcode.IntakeArmConstants.INTAKE_ARM_EXTEND;
-import static org.firstinspires.ftc.teamcode.IntakeArmConstants.INTAKE_ARM_EXCHANGE;
-import static org.firstinspires.ftc.teamcode.IntakeArmConstants.TIME_FOR_EXCHANGE_POSITION;
-import static org.firstinspires.ftc.teamcode.IntakeArmConstants.TIME_FOR_INTAKE_CLEARANCE;
+import static org.firstinspires.ftc.teamcode.IntakeArmConstants.INTAKE_ARM_ACTIVE_POSITION;
+import static org.firstinspires.ftc.teamcode.IntakeArmConstants.INTAKE_ARM_CLEARANCE_POSITION;
+import static org.firstinspires.ftc.teamcode.IntakeArmConstants.INTAKE_ARM_EXCHANGE_POSITION;
+import static org.firstinspires.ftc.teamcode.IntakeArmConstants.INTAKE_ARM_EXCHANGE_TIME;
+import static org.firstinspires.ftc.teamcode.IntakeArmConstants.INTAKE_ARM_CLEARANCE_TIME;
 import static org.firstinspires.ftc.teamcode.IntakeMotorConstants.INTAKE_MOTOR_POWER;
 import static org.firstinspires.ftc.teamcode.IntakeMotorConstants.INTAKE_MOTOR_REVOLUTION_TIME;
-import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_EXCHANGE_MARGIN_OF_ERROR;
+import static org.firstinspires.ftc.teamcode.IntakeMotorConstants.IntakeDirection.*;
+import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_EXCHANGE_MARGIN_OF_ERROR;
 import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_EXCHANGE_POSITION;
 import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_FAST_RETRACT_POWER;
 import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_MAX_EXTENSION;
-import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_MIN_EXTENSION;
+import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_MIN_EXTENSION_FOR_CLEARANCE;
+import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_RECALIBRATE_SPEED;
 import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_RESTING_POSITION;
 import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_SLOW_ADJUST_POWER;
 import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_SLOW_RETRACT_POWER;
 import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_SLOW_RETRACT_THRESHOLD;
+import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_TRAWL_SPEED;
 import static org.firstinspires.ftc.teamcode.TiltServoConstants.TILT_DOWN;
 import static org.firstinspires.ftc.teamcode.TiltServoConstants.TILT_UP;
 import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_FAST_RAISE;
@@ -37,10 +40,11 @@ import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_MIN_HEI
 import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_EXCHANGE_HEIGHT;
 import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_FAST_DROP;
 import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_MARGIN_OF_ERROR;
+import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_SLIDE_RECALIBRATE_SPEED;
 import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_SLOW_DROP;
 import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_SLOW_MOTOR_THRESHOLD;
 import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_SLOW_RAISE;
-import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_SPECIMEN_DROP;
+import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_SPECIMEN_DROP_HEIGHT;
 import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_WALL_HEIGHT;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -82,32 +86,31 @@ public class EbTeleOp extends OpMode {
 
     //Class variables
     private RobotAction robotAction;
-    private boolean retractionInitiated = false;
-    private boolean intakeIsRunning = false;
-    private boolean intakeReadyForExchange = false;
-    private boolean vertReadyForExchange = false;
-    private double drivePower;
-    private boolean intakeIsLoaded = false;
-    private boolean clawIsLoaded = false;
-    private boolean sampleReadyForRelease = false;
-    private boolean specimenReadyToHang = false;
-    private boolean isRecalibrationMode = false;
-    private boolean specimenReadyToGrab = false;
     private GamePieceType gamePiece = GamePieceType.NONE;
+
+    private double drivePower;
+    private double clawPivotDistance = 0;
+
+    //action indicators
+    private boolean isRetractedIntake = false;
+    private boolean isActiveIntake = false;
+    private boolean isReadyForExchangeIntake = false;
+    private boolean isReadyForExchangeVert = false;
+    private boolean isLoadedClaw = false;
+    private boolean isReadyForReleaseSample = false;
+    private boolean isReadyToHangSpecimen = false;
+    private boolean isRecalibrationMode = false;
+    private boolean isReadyToGrabSpecimen = false;
     private boolean isManualMode = false;
     private boolean isEndGame = false;
     private boolean isTilted = false;
-    private boolean climbInitiated = false;
-    private boolean clawArmIsPositioned = true;
-    private boolean intakeInUse = false;
-    private boolean wallGrabInitiated = false;
-    private boolean hangInProgress = false;
-    private boolean clawGripIsSet = true;
-
-    private boolean resetActions = true;
-
-    private double clawPivotDistance = 0;
-
+    private boolean isInitiatedClimb = false;
+    private boolean isPositionedClawArm = true;
+    private boolean isInUseIntake = false;
+    private boolean isInitiatedSpecimenGrab = false;
+    private boolean isRunningIntake = false;
+    private boolean isInProgressHang = false;
+    private boolean isSetClawGrip = true;
 
     //Drive Constants
     private final double DRIVE_POWER_NORMAL = 1.0;
@@ -307,21 +310,21 @@ public class EbTeleOp extends OpMode {
             robotAction = RobotAction.RUN_MANUAL_MODE;
         } else if (isRecalibrationMode) {
             robotAction = RobotAction.RUN_SLIDE_RECALIBRATION;
-        } else if (sampleReadyForRelease) {
+        } else if (isReadyForReleaseSample) {
             robotAction = RobotAction.RUN_RELEASE_SAMPLE;
-        } else if (specimenReadyToHang) {
+        } else if (isReadyToHangSpecimen) {
             robotAction = RobotAction.RUN_HANG_SPECIMEN;
-        } else if (clawIsLoaded) {
+        } else if (isLoadedClaw) {
             robotAction = RobotAction.ALIGN_SLIDE_FOR_POINTS;
-        } else if (intakeReadyForExchange && vertReadyForExchange) {
+        } else if (isReadyForExchangeIntake && isReadyForExchangeVert) {
             robotAction = RobotAction.EXCHANGE_SAMPLE;
-        } else if (intakeReadyForExchange) {
+        } else if (isReadyForExchangeIntake) {
             robotAction = RobotAction.POSITION_CLAW_FOR_EXCHANGE;
-        } else if (intakeInUse) {
+        } else if (isInUseIntake) {
             robotAction = RobotAction.USE_INTAKE;
-        } else if (specimenReadyToGrab) {
+        } else if (isReadyToGrabSpecimen) {
             robotAction = RobotAction.GET_SPECIMEN_FROM_WALL;
-        } else if (wallGrabInitiated) {
+        } else if (isInitiatedSpecimenGrab) {
             robotAction = RobotAction.ALIGN_SLIDE_FOR_WALL;
         } else {
             robotAction = RobotAction.IDLE;
@@ -333,7 +336,8 @@ public class EbTeleOp extends OpMode {
             case IDLE:
                 if (slideVertRightMotor.getCurrentPosition() > VERT_EXCHANGE_HEIGHT ||
                         slideVertLeftMotor.getCurrentPosition() > VERT_EXCHANGE_HEIGHT) {
-                    setVertSlidesByPositions(VERT_EXCHANGE_HEIGHT);
+                    isReadyForExchangeVert = hasSetClawArmPosition(VERT_EXCHANGE_HEIGHT)
+                            && hasSetVertPosition(VERT_EXCHANGE_HEIGHT);
                 }
                 if (gamepad1.back) {
                     isEndGame = true;
@@ -342,68 +346,77 @@ public class EbTeleOp extends OpMode {
                 } else if (gamepad1.dpad_up) {
                     isRecalibrationMode = true;
                 } else if (gamepad2.left_stick_y != 0) {
-                    useIntakeArm();
-                    intakeInUse = true;
+                    useIntakeArm(gamepad2.left_stick_y);
+                    isInUseIntake = true;
                 } else if (gamepad2.right_stick_button) {
-                    wallGrabInitiated = true;
-                    specimenReadyToGrab = (alignVertTargets(VERT_WALL_HEIGHT, CLAW_WALL_SPECIMEN_POSITION)
-                            && setClawPosition(CLAW_OPEN));
+                    isInitiatedSpecimenGrab = true;
+                    isReadyToGrabSpecimen =
+                            hasSetVertPosition(VERT_WALL_HEIGHT)
+                                    && hasSetClawArmPosition(CLAW_WALL_SPECIMEN_POSITION)
+                                    && hasOpenedClaw();
                 }
                 break;
             case ALIGN_SLIDE_FOR_WALL:
                 if (gamepad1.back) {
                     isEndGame = true;
-                    wallGrabInitiated = false;
+                    isInitiatedSpecimenGrab = false;
                 } else if (gamepad2.back) {
                     isManualMode = true;
-                    wallGrabInitiated = false;
-                } else if (gamepad2.right_stick_y != 0) {
-                    useIntakeArm();
-                    wallGrabInitiated = false;
+                    isInitiatedSpecimenGrab = false;
+                } else if (gamepad2.left_stick_y != 0) {
+                    useIntakeArm(gamepad2.left_stick_y);
+                    isInitiatedSpecimenGrab = false;
                 } else {
-                    specimenReadyToGrab = (alignVertTargets(VERT_WALL_HEIGHT, CLAW_WALL_SPECIMEN_POSITION)
-                            && setClawPosition(CLAW_OPEN));
-                    wallGrabInitiated = !specimenReadyToGrab;
+                    isReadyToGrabSpecimen =
+                            hasSetVertPosition(VERT_WALL_HEIGHT)
+                                    && hasSetClawArmPosition(CLAW_WALL_SPECIMEN_POSITION)
+                                    && hasOpenedClaw();
+                    isInitiatedSpecimenGrab = !isReadyToGrabSpecimen;
                 }
                 break;
             case GET_SPECIMEN_FROM_WALL:
                 if (clawMotorTimer.time() > CLAW_CHANGE_TIME) {
                     if (gamepad1.back) {
-                        specimenReadyToGrab = false;
+                        isReadyToGrabSpecimen = false;
                         isEndGame = true;
                     } else if (gamepad2.back) {
                         isManualMode = true;
-                        specimenReadyToGrab = false;
+                        isReadyToGrabSpecimen = false;
                     } else if (gamepad2.left_stick_y != 0) {
-                        specimenReadyToGrab = false;
-                        useIntakeArm();
+                        isReadyToGrabSpecimen = false;
+                        useIntakeArm(gamepad2.left_stick_y);
                     } else if (gamepad2.left_bumper) {
-                        clawIsLoaded = setClawPosition(CLAW_CLOSE);
-                        specimenReadyToGrab = !clawIsLoaded;
+                        isLoadedClaw = hasClosedClaw();
+                        isReadyToGrabSpecimen = !isLoadedClaw;
                     } else {
-                        clawIsLoaded = (clawServo.getPosition() == CLAW_CLOSE);
-                        specimenReadyToGrab = !clawIsLoaded;
+                        isLoadedClaw = (clawServo.getPosition() == CLAW_CLOSE);
+                        isReadyToGrabSpecimen = !isLoadedClaw;
                     }
                 }
                 break;
             case USE_INTAKE:
                 if (gamepad1.back) {
-                    intakeInUse = false;
+                    isInUseIntake = false;
                     isEndGame = true;
                 } else {
-                    useIntakeArm();
+                    useIntakeArm(gamepad2.left_stick_y);
+                    if (gamepad2.right_stick_button) {
+                        isActiveIntake = hasActivatedIntake(!isActiveIntake);
+                    }
                 }
                 break;
             case POSITION_CLAW_FOR_EXCHANGE:
                 if (gamepad1.back) {
                     isEndGame = true;
                 }
-                vertReadyForExchange = setClawPosition(CLAW_EXCHANGE_POSITION);
+                isReadyForExchangeVert =
+                        hasSetVertPosition(VERT_EXCHANGE_HEIGHT)
+                                && hasSetClawArmPosition(CLAW_EXCHANGE_POSITION);
                 break;
             case EXCHANGE_SAMPLE:
-                clawIsLoaded = grabSampleFromExchange();
-                vertReadyForExchange = !clawIsLoaded;
-                intakeReadyForExchange = !clawIsLoaded;
+                isLoadedClaw = grabSampleFromExchange();
+                isReadyForExchangeVert = !isLoadedClaw;
+                isReadyForExchangeIntake = !isLoadedClaw;
                 break;
             case ALIGN_SLIDE_FOR_POINTS:
                 if (gamepad1.back) {
@@ -412,69 +425,81 @@ public class EbTeleOp extends OpMode {
                     isManualMode = true;
                 } else if (gamePiece == GamePieceType.SPECIMEN) {
                     if (gamepad2.a) {
-                        sampleReadyForRelease = alignVertTargets(VERT_LOW_BASKET_HEIGHT, CLAW_BASKET_DROP_POSITION);
+                        isReadyForReleaseSample =
+                                hasSetVertPosition(VERT_LOW_BASKET_HEIGHT)
+                                        && hasSetClawArmPosition(CLAW_BASKET_DROP_POSITION);
                     } else if (gamepad2.x) {
-                        sampleReadyForRelease = alignVertTargets(VERT_HIGH_BASKET_HEIGHT, CLAW_BASKET_DROP_POSITION);
+                        isReadyForReleaseSample =
+                                hasSetVertPosition(VERT_HIGH_BASKET_HEIGHT)
+                                        && hasSetClawArmPosition(CLAW_BASKET_DROP_POSITION);
                     }
                 } else if (gamePiece == GamePieceType.SAMPLE) {
                     if (gamepad2.b) {
-                        specimenReadyToHang = alignVertTargets(VERT_LOW_CHAMBER_HEIGHT, CLAW_CHAMBER_HANG_POSITION);
+                        isReadyToHangSpecimen =
+                                hasSetVertPosition(VERT_LOW_CHAMBER_HEIGHT)
+                                        && hasSetClawArmPosition(CLAW_CHAMBER_HANG_POSITION);
                     } else if (gamepad2.y) {
-                        specimenReadyToHang = alignVertTargets(VERT_HIGH_CHAMBER_HEIGHT, CLAW_CHAMBER_HANG_POSITION);
+                        isReadyToHangSpecimen =
+                                hasSetVertPosition(VERT_HIGH_CHAMBER_HEIGHT)
+                                        && hasSetClawArmPosition(CLAW_CHAMBER_HANG_POSITION);
                     }
                 }
                 break;
             case RUN_RELEASE_SAMPLE:
                 if (gamepad2.left_bumper) {
-                    sampleReadyForRelease = !setClawPosition(CLAW_OPEN);
+                    isReadyForReleaseSample = !hasOpenedClaw();
                 }
                 break;
             case RUN_HANG_SPECIMEN:
                 if (gamepad2.left_bumper) {
-                    hangInProgress = true;
+                    isInProgressHang = true;
                 }
-                specimenReadyToHang = !hangSpecimenOnChamberRung();
+                isReadyToHangSpecimen = !hasHungSpecimen();
                 break;
             case RUN_END_GAME_MODE:
                 if (gamepad1.y) {
-                    tiltRobot(TILT_UP);
-                    isTilted = true;
+                    isTilted = hasTiltedRobot(TILT_UP);
                 }
                 if (gamepad1.x) {
-                    tiltRobot(TILT_DOWN);
-                    isTilted = false;
+                    isTilted = hasTiltedRobot(TILT_DOWN);
                 }
                 if (gamepad2.left_stick_y != 0) {
-                    setVertSlidesWithLeftStick();
-                    climbInitiated = true;
+                    setVertSlidesManually(gamepad2.left_stick_y);
+                    isInitiatedClimb = true;
                 }
-                if (gamepad1.back && !climbInitiated) {
+                if (gamepad1.back && !isInitiatedClimb) {
                     isEndGame = false;
                     if (isTilted) {
-                        tiltRobot(TILT_DOWN);
+                        isTilted = hasTiltedRobot(TILT_DOWN);
                     }
                 }
             case RUN_MANUAL_MODE:
                 if (gamepad2.left_stick_y != 0) {
-                    useIntakeArm();
+                    useIntakeArm(gamepad2.left_stick_y);
                 } else {
                     if (gamepad2.right_stick_y != 0) {
-                        setVertSlidesWithLeftStick();
+                        setVertSlidesManually(gamepad2.right_stick_y);
                     }
                     if (gamepad2.right_trigger != 0) {
-                        clawArmIsPositioned = rotateClawArmForward();
+                        isPositionedClawArm = hasRotatedClawForward();
                     } else if (gamepad2.left_trigger != 0) {
-                        clawArmIsPositioned = rotateClawArmBackward();
+                        isPositionedClawArm = hasRotatedClawBackward();
                     }
                 }
-                clawArmIsPositioned = (clawArmTimer.time() > CLAW_ARM_CHANGE_TIME);
+                isPositionedClawArm = (clawArmTimer.time() > CLAW_ARM_CHANGE_TIME);
                 if (gamepad2.left_bumper) {
-                    clawGripIsSet = setClawPosition((clawServo.getPosition() == CLAW_OPEN) ? CLAW_CLOSE : CLAW_OPEN);
+                    if (clawServo.getPosition() == CLAW_OPEN) {
+                        isSetClawGrip = hasClosedClaw();
+                    } else {
+                        isSetClawGrip = hasOpenedClaw();
+                    }
                 }
-                clawGripIsSet = (clawMotorTimer.time() > CLAW_CHANGE_TIME);
+                isSetClawGrip = (clawMotorTimer.time() > CLAW_CHANGE_TIME);
                 break;
             case RUN_SLIDE_RECALIBRATION:
-                recalibrateSlides();
+                if (gamepad1.dpad_down || gamepad1.dpad_right) {
+                    recalibrateSlides(gamepad1.dpad_right, gamepad2.dpad_down);
+                }
                 if (gamepad1.right_stick_button) {
                     resetEncoders();
                     isRecalibrationMode = false;
@@ -487,10 +512,12 @@ public class EbTeleOp extends OpMode {
 
     }
 
-    private void tiltRobot(double position) {
+    private boolean hasTiltedRobot(double position) {
+        boolean b = (position == TILT_UP);
         if (climbLiftServo.getPosition() != position) {
             climbLiftServo.setPosition(position);
         }
+        return b;
     }
 
     private void resetEncoders() {
@@ -499,14 +526,16 @@ public class EbTeleOp extends OpMode {
         intakeSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
 
+    /*
+        NEED TO FIGURE OUT THIS CODE ONCE THE BUILD IS COMPLETE
+     */
     private boolean grabSampleFromExchange() {
-
         double motorPower = 0;
 
         if (!clawSwitch.getState()) {
             motorPower = VERT_SLOW_DROP;
         } else {
-            return setClawPosition(CLAW_CLOSE);
+            return hasClosedClaw();
         }
 
         slideVertLeftMotor.setPower(motorPower);
@@ -515,96 +544,96 @@ public class EbTeleOp extends OpMode {
         return false;
     }
 
-    private void useIntakeArm() {
+    private void useIntakeArm(double power) {
 
-        intakeInUse = true;
+        /*
+        1.  Intake is loaded;
+        2.  Intake is active;
+        3.  Intake is inactive
+         */
+        isInUseIntake = true;
 
         double motorPower = 0;
         double slidePosition = intakeSlideMotor.getCurrentPosition();
         double armPosition = intakePivotArmServo.getPosition();
 
-        vertReadyForExchange = alignVertTargets(VERT_EXCHANGE_HEIGHT, CLAW_EXCHANGE_POSITION);
+        /*
+        if intake is in use, then the vertical arm and the claw should be set to the exchange position
+         */
+        isReadyForExchangeVert =
+                hasSetVertPosition(VERT_EXCHANGE_HEIGHT)
+                        && hasSetClawArmPosition(CLAW_EXCHANGE_POSITION);
 
         //1.  INTAKE LOADED
-        if (intakeSwitch.getState()) {  //getState == true when switch is pressed
-            if (intakeIsRunning) {
-                runIntakeMotor();  //if intake hasn't fully loaded the sample, allow intake to continue running
+        /*
+        When a sample is pulled into the intake, the roller switch will move to the CLOSED position.
+        Intake motor needs to run until the intake rotation completes.  Once it is complete, the
+        intake arm should automatically lift and the intake slide should retract.
+         */
+        if (intakeSwitch.getState()) {  //this is the roller switch, true is CLOSED
+            if (isRunningIntake) {
+                runIntakeMotor(INTAKE);  //if intake hasn't fully loaded the sample, allow intake to continue running
                 return;
-            }
-            if (!retractionInitiated) {  //retractionInitiated is set to false when pivot arm is lowered
-                intakeArmTimer.reset();  //reset the timer for the pivot arm to make sure intake is above bottom rail
-                retractionInitiated = true;  //flag that we have begun retraction so we don't continue to loop through this code
-                intakePivotArmServo.setPosition(INTAKE_ARM_EXCHANGE);  //set position of arm to EXCHANGE
+            } else if (!hasWrongColorInIntake()) {
+                runIntakeMotor(EJECT);
+            } else if (!isRetractedIntake) {
+                fastRetractIntake();
             } else {
-                if (intakeArmTimer.time() > TIME_FOR_INTAKE_CLEARANCE //once servo has had enough time to lift above bottom rail
-                        && Math.abs(slidePosition - INTAKE_SLIDE_EXCHANGE_POSITION) > INTAKE_EXCHANGE_MARGIN_OF_ERROR) {
-                    if (slidePosition - INTAKE_SLIDE_EXCHANGE_POSITION > INTAKE_SLIDE_SLOW_RETRACT_THRESHOLD) {  // if slide is not to EXCHANGE position
-                        motorPower = INTAKE_SLIDE_FAST_RETRACT_POWER;  //retract at full speed
-                    } else {
-                        motorPower = (slidePosition > INTAKE_SLIDE_EXCHANGE_POSITION ? -1 : 1) * INTAKE_SLIDE_SLOW_ADJUST_POWER;
-                    }
-                } else if (intakeArmTimer.time() > TIME_FOR_EXCHANGE_POSITION &&
-                        Math.abs(slidePosition - INTAKE_SLIDE_EXCHANGE_POSITION) < INTAKE_EXCHANGE_MARGIN_OF_ERROR) {
-                    intakeReadyForExchange = true;
-                    intakeInUse = false;//flag as READY
+                isReadyForExchangeIntake = hasSetIntakeArmPosition(INTAKE_ARM_EXCHANGE_POSITION, INTAKE_ARM_EXCHANGE_TIME);
+                isInUseIntake = !isReadyForExchangeIntake;
+            }
+        } else if (isActiveIntake) {
+            /*
+            2.  Intake Active
+            Slide moves at set speed when intake is active so that the drivers can trawl for
+            samples.
+             */
+            runIntakeMotor(INTAKE);
+            if (power > 0) {
+                if (slidePosition < INTAKE_SLIDE_MAX_EXTENSION) {
+                    motorPower = power;
+                }
+            } else {
+                if (slidePosition > INTAKE_SLIDE_MIN_EXTENSION_FOR_CLEARANCE) {
+                    motorPower = INTAKE_SLIDE_TRAWL_SPEED;
                 }
             }
-            //2.  SLIDE EXTENDING
         } else {
-            if (gamepad2.left_stick_y > 0) { //extend arm when pushing left stick up
+            /*
+            3.  Intake Inactive
+             */
+            if (power > 0) {
                 if (slidePosition < INTAKE_SLIDE_MAX_EXTENSION) { //If MAX_POSITION not reached
-                    motorPower = gamepad2.left_stick_y; //Set power based on y position
+                    motorPower = power; //Set power based on y position
                 }
-                if (slidePosition > INTAKE_SLIDE_MIN_EXTENSION
-                        && armPosition != INTAKE_ARM_EXTEND
-                        && armPosition != INTAKE_ARM_ACTIVE) { // if pivot arm is not in EXTEND or ACTIVE position and slide is beyond MIN_EXT
-                    intakePivotArmServo.setPosition(INTAKE_ARM_EXTEND);  //set pivot arm to EXTEND
+                if (slidePosition > INTAKE_SLIDE_MIN_EXTENSION_FOR_CLEARANCE
+                        && armPosition != INTAKE_ARM_CLEARANCE_POSITION
+                        && armPosition != INTAKE_ARM_ACTIVE_POSITION) { // if pivot arm is not in EXTEND or ACTIVE position and slide is beyond MIN_EXT
+                    intakePivotArmServo.setPosition(INTAKE_ARM_CLEARANCE_POSITION);  //set pivot arm to EXTEND
                 }
                 //3.   SLIDE RETRACTING
-            } else if (gamepad2.left_stick_y < 0) {  //retract arm when pulling left stick down
-                if (armPosition == INTAKE_ARM_ACTIVE) {  //if intake active
-                    if (slidePosition > INTAKE_SLIDE_MIN_EXTENSION) {  //if slide position is extended beyond MIN_EXT
-                        motorPower = INTAKE_SLIDE_SLOW_RETRACT_POWER;  //set motor power to slow retract
-                        runIntakeMotor();
-                    }
-                } else {  //if not intake active
-                    if (intakeSlideMotor.getCurrentPosition() > INTAKE_SLIDE_MIN_EXTENSION) {
-                        motorPower = gamepad2.left_stick_y;
-                    }
-                    if (intakeArmTimer.time() > TIME_FOR_INTAKE_CLEARANCE) {  //check that pivot arm is in exchange position
-                        if (slidePosition > INTAKE_SLIDE_EXCHANGE_POSITION) {  //if slide position is greater than exchange
-                            motorPower = gamepad2.left_stick_y;  //set power to fast retract
-                        } else if (slidePosition > INTAKE_SLIDE_RESTING_POSITION) {  //if slide position is less than exchange but greater than resting
-                            motorPower = INTAKE_SLIDE_SLOW_RETRACT_POWER; //set power to slow retract
-                            intakeInUse = false;
-                        }
-                    }
+            } else if (power < 0) {  //retract arm when pulling left stick down
+                if (slidePosition > INTAKE_SLIDE_SLOW_RETRACT_THRESHOLD) {
+                    motorPower = power;
+                } else if (slidePosition > INTAKE_SLIDE_EXCHANGE_POSITION) {
+                    motorPower = INTAKE_SLIDE_SLOW_RETRACT_POWER;
+                } else {
+                    isInUseIntake = hasSetIntakeArmPosition(INTAKE_ARM_EXCHANGE_POSITION, INTAKE_ARM_EXCHANGE_TIME);
                 }
             }
         }
-
         intakeSlideMotor.setPower(motorPower);  //set intakeSlide power to motorPower
-
-        //RAISING AND LOWERING THE INTAKE
-        if (gamepad2.left_stick_button) {  //push left stick button to change intake position
-            if (armPosition == INTAKE_ARM_ACTIVE) {  //if active
-                intakePivotArmServo.setPosition((INTAKE_ARM_EXCHANGE)); //set to EXCHANGE
-                intakeArmTimer.reset();
-                //reset intakeRaiseTimer to 0
-            } else if (slidePosition > INTAKE_SLIDE_MIN_EXTENSION) {  //if not ACTIVE
-                intakePivotArmServo.setPosition(INTAKE_ARM_ACTIVE); //set to ACTIVE
-                retractionInitiated = false;  //flag retraction as false
-            }
-        }
     }
 
-    private void runIntakeMotor() {
+
+    private void runIntakeMotor(IntakeMotorConstants.IntakeDirection intakeDirection) {
         double motorPower = 0;
-        if (intakeIsRunning) {
+        double multiplier = (intakeDirection == INTAKE ? 1 : -1);
+        if (isRunningIntake) {
             if (intakeMotorTimer.time() < INTAKE_MOTOR_REVOLUTION_TIME) {
                 motorPower = INTAKE_MOTOR_POWER;
             } else {
-                intakeIsRunning = false;
+                isRunningIntake = false;
                 intakeMotorTimer.reset();
             }
         } else {
@@ -616,52 +645,203 @@ public class EbTeleOp extends OpMode {
         intakeFrameServo.setPower(motorPower);
     }
 
-    private double retractIntake(double slidePosition) {
+    private void fastRetractIntake() {
 
         double motorPower = 0;
-        if (!retractionInitiated) {  //retractionInitiated is set to false when pivot arm is lowered
-            intakeArmTimer.reset();  //reset the timer for the pivot arm to make sure intake is above bottom rail
-            retractionInitiated = true;  //flag that we have begun retraction so we don't continue to loop through this code
-            intakePivotArmServo.setPosition(INTAKE_ARM_EXCHANGE);  //set position of arm to EXCHANGE
-        } else {
-            if (intakeArmTimer.time() > TIME_FOR_INTAKE_CLEARANCE //once servo has had enough time to lift above bottom rail
-                    && Math.abs(slidePosition - INTAKE_SLIDE_EXCHANGE_POSITION) > INTAKE_EXCHANGE_MARGIN_OF_ERROR) {
-                if (slidePosition - INTAKE_SLIDE_EXCHANGE_POSITION > INTAKE_SLIDE_SLOW_RETRACT_THRESHOLD) {  // if slide is not to EXCHANGE position
-                    motorPower = INTAKE_SLIDE_FAST_RETRACT_POWER;  //retract at full speed
-                } else {
-                    motorPower = (slidePosition > INTAKE_SLIDE_EXCHANGE_POSITION ? -1 : 1) * INTAKE_SLIDE_SLOW_ADJUST_POWER;
-                }
-            } else if (intakeArmTimer.time() > TIME_FOR_EXCHANGE_POSITION &&
-                    Math.abs(slidePosition - INTAKE_SLIDE_EXCHANGE_POSITION) < INTAKE_EXCHANGE_MARGIN_OF_ERROR) {
-                intakeReadyForExchange = true;  //flag as READY
-                robotAction = RobotAction.EXCHANGE_SAMPLE;
-            }
+        double pos = intakeSlideMotor.getCurrentPosition();
+
+        boolean isAtClearanceHeight = hasSetIntakeArmPosition(INTAKE_ARM_CLEARANCE_POSITION, INTAKE_ARM_CLEARANCE_TIME);
+
+        if (pos > INTAKE_SLIDE_MIN_EXTENSION_FOR_CLEARANCE) {
+            motorPower = INTAKE_SLIDE_FAST_RETRACT_POWER;
+        } else if (isAtClearanceHeight && pos > INTAKE_SLIDE_EXCHANGE_POSITION + INTAKE_SLIDE_SLOW_RETRACT_THRESHOLD) {
+            motorPower = INTAKE_SLIDE_FAST_RETRACT_POWER;
+        } else if (isAtClearanceHeight && pos > INTAKE_SLIDE_EXCHANGE_POSITION + INTAKE_SLIDE_EXCHANGE_MARGIN_OF_ERROR) {
+            motorPower = INTAKE_SLIDE_SLOW_RETRACT_POWER;
+        } else if (pos < INTAKE_SLIDE_EXCHANGE_POSITION - INTAKE_SLIDE_EXCHANGE_MARGIN_OF_ERROR) {
+            motorPower = INTAKE_SLIDE_SLOW_ADJUST_POWER;
+        } else if (Math.abs(pos - INTAKE_SLIDE_MIN_EXTENSION_FOR_CLEARANCE) < INTAKE_SLIDE_EXCHANGE_MARGIN_OF_ERROR) {
+            isRetractedIntake = true;
+            return;
         }
-        return motorPower;
+        intakeSlideMotor.setPower(motorPower);
     }
 
-    private boolean alignVertTargets(double vertPosition, double armPosition) {
-        boolean vertPosSet = false;
-        boolean armPosSet = false;
+    /*
+    NEED TO FIGURE OUT THIS CODE ONCE BUILD IS COMPLETE
+     */
+    private boolean hasWrongColorInIntake() {
+        return false;
+    }
 
-        if (Math.abs(vertPosition - slideVertLeftMotor.getCurrentPosition()) > VERT_MARGIN_OF_ERROR
-                || Math.abs(vertPosition - slideVertRightMotor.getCurrentPosition()) > VERT_MARGIN_OF_ERROR) {
-            setVertSlidesByPositions(vertPosition);
+    private boolean hasSetVertPosition(double position) {
+        if (Math.abs(position - slideVertLeftMotor.getCurrentPosition()) > VERT_MARGIN_OF_ERROR
+                || Math.abs(position - slideVertRightMotor.getCurrentPosition()) > VERT_MARGIN_OF_ERROR) {
+            setVertSlidesByPositions(position);
+            return false;
         } else {
-            vertPosSet = true;
+            return true;
+        }
+    }
+
+    private boolean hasSetClawArmPosition(double position) {
+        if (clawPivotArmServo.getPosition() != position) {
+            clawPivotArmServo.setPosition(position);
+            clawArmTimer.reset();
+            return false;
+        }
+        return (clawArmTimer.time() > CLAW_ARM_CHANGE_TIME);
+    }
+
+    private boolean hasOpenedClaw() {
+        if (clawServo.getPosition() != CLAW_OPEN) {
+            clawServo.setPosition(CLAW_OPEN);
+            clawMotorTimer.reset();
+            return false;
+        } else {
+            return clawMotorTimer.time() > CLAW_CHANGE_TIME;
+        }
+    }
+
+    private boolean hasClosedClaw() {
+        if (clawServo.getPosition() != CLAW_CLOSE) {
+            clawServo.setPosition(CLAW_CLOSE);
+            clawMotorTimer.reset();
+            return false;
+        } else {
+            return clawMotorTimer.time() > CLAW_CHANGE_TIME;
+        }
+    }
+
+    private boolean hasSetIntakeArmPosition(double position, double time) {
+        if (intakePivotArmServo.getPosition() != position) {
+            intakePivotArmServo.setPosition(position);
+            intakeArmTimer.reset();
+            return false;
+        }
+        return intakeArmTimer.time() > time;
+    }
+
+    private boolean hasActivatedIntake(boolean activate) {
+        if (activate) {
+            if (intakeSlideMotor.getCurrentPosition() < INTAKE_SLIDE_MIN_EXTENSION_FOR_CLEARANCE) {
+                return false;
+            }
+            return hasSetIntakeArmPosition(INTAKE_ARM_ACTIVE_POSITION, INTAKE_ARM_CLEARANCE_TIME);
+        }
+        hasSetIntakeArmPosition(INTAKE_ARM_CLEARANCE_POSITION, INTAKE_ARM_CLEARANCE_TIME);
+        return false;
+    }
+
+    private boolean hasHungSpecimen() {
+        //lower specimen onto chamber rung
+        double pos = slideVertLeftMotor.getCurrentPosition();
+        double motorPower = 0;
+
+        if (pos > VERT_SPECIMEN_DROP_HEIGHT) {
+            motorPower = VERT_HANG_SPEED;
         }
 
-        if (clawPivotArmServo.getPosition() != armPosition) {
-            clawPivotDistance = Math.abs(clawPivotArmServo.getPosition() - armPosition);
-            clawPivotArmServo.setPosition(armPosition);
-            clawArmTimer.reset();
+        slideVertLeftMotor.setPower(motorPower);
+        slideVertRightMotor.setPower(motorPower);
+
+        if (pos > VERT_SPECIMEN_DROP_HEIGHT) {
+            return false;
         } else {
-            if (clawArmTimer.time() > clawPivotDistance * 180 * CLAW_ARM_CHANGE_TIME) {
-                armPosSet = true;
+            return hasOpenedClaw();
+        }
+
+    }
+
+    private boolean hasRotatedClawForward() {
+        double pos = clawPivotArmServo.getPosition();
+        if (isPositionedClawArm) {
+            if (pos == CLAW_BASKET_DROP_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_EXCHANGE_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else if (pos == CLAW_CHAMBER_HANG_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_BASKET_DROP_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else if (pos == CLAW_WALL_SPECIMEN_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_CHAMBER_HANG_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else {
+                return true;
+            }
+        } else if (clawArmTimer.time() > CLAW_ARM_CHANGE_TIME) {
+            if (pos == CLAW_BASKET_DROP_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_EXCHANGE_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else if (pos == CLAW_CHAMBER_HANG_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_BASKET_DROP_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else if (pos == CLAW_WALL_SPECIMEN_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_CHAMBER_HANG_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else {
+                return true;
             }
         }
+        return false;
+    }
 
-        return (vertPosSet && armPosSet);
+    private boolean hasRotatedClawBackward() {
+        double pos = clawPivotArmServo.getPosition();
+        if (isPositionedClawArm) {
+            if (pos == CLAW_CHAMBER_HANG_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_WALL_SPECIMEN_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else if (pos == CLAW_BASKET_DROP_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_CHAMBER_HANG_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else if (pos == CLAW_EXCHANGE_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_BASKET_DROP_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else {
+                return true;
+            }
+        } else if (clawArmTimer.time() > CLAW_ARM_CHANGE_TIME) {
+            if (pos == CLAW_CHAMBER_HANG_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_WALL_SPECIMEN_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else if (pos == CLAW_BASKET_DROP_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_CHAMBER_HANG_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else if (pos == CLAW_EXCHANGE_POSITION) {
+                clawPivotArmServo.setPosition(CLAW_BASKET_DROP_POSITION);
+                clawArmTimer.reset();
+                return false;
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void recalibrateSlides(boolean recalIntake, boolean recalVert) {
+        isRecalibrationMode = true;
+        double intakeMotorPower = 0;
+        double vertMotorPower = 0;
+        if (recalIntake) {
+            intakeMotorPower = INTAKE_SLIDE_RECALIBRATE_SPEED;
+        }
+        intakeSlideMotor.setPower(intakeMotorPower);
+        if (recalVert) {
+            vertMotorPower = VERT_SLIDE_RECALIBRATE_SPEED;
+        }
+        slideVertLeftMotor.setPower(vertMotorPower);
+        slideVertRightMotor.setPower(vertMotorPower);
     }
 
     private void setVertSlidesByPositions(double position) {
@@ -690,107 +870,7 @@ public class EbTeleOp extends OpMode {
         slideVertRightMotor.setPower(rightMotorPower);
     }
 
-    private boolean setClawPosition(double position) {
-        if (clawServo.getPosition() != position) {
-            clawServo.setPosition(position);
-            clawMotorTimer.reset();
-            return false;
-        }
-        return (clawMotorTimer.time() > CLAW_CHANGE_TIME);
-    }
-
-    private boolean rotateClawArmForward() {
-        double pos = clawPivotArmServo.getPosition();
-        if (clawArmIsPositioned) {
-            if (pos == CLAW_BASKET_DROP_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_EXCHANGE_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else if (pos == CLAW_CHAMBER_HANG_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_BASKET_DROP_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else if (pos == CLAW_WALL_SPECIMEN_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_CHAMBER_HANG_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else {
-                return true;
-            }
-        } else if (clawArmTimer.time() > CLAW_ARM_CHANGE_TIME) {
-            if (pos == CLAW_BASKET_DROP_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_EXCHANGE_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else if (pos == CLAW_CHAMBER_HANG_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_BASKET_DROP_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else if (pos == CLAW_WALL_SPECIMEN_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_CHAMBER_HANG_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean rotateClawArmBackward() {
-        double pos = clawPivotArmServo.getPosition();
-        if (clawArmIsPositioned) {
-            if (pos == CLAW_CHAMBER_HANG_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_WALL_SPECIMEN_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else if (pos == CLAW_BASKET_DROP_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_CHAMBER_HANG_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else if (pos == CLAW_EXCHANGE_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_BASKET_DROP_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else {
-                return true;
-            }
-        } else if (clawArmTimer.time() > CLAW_ARM_CHANGE_TIME) {
-            if (pos == CLAW_CHAMBER_HANG_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_WALL_SPECIMEN_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else if (pos == CLAW_BASKET_DROP_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_CHAMBER_HANG_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else if (pos == CLAW_EXCHANGE_POSITION) {
-                clawPivotArmServo.setPosition(CLAW_BASKET_DROP_POSITION);
-                clawArmTimer.reset();
-                return false;
-            } else {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void recalibrateSlides() {
-        isRecalibrationMode = true;
-        double intakeMotorPower = 0;
-        double vertMotorPower = 0;
-        if (gamepad1.dpad_left) {
-            intakeMotorPower = -INTAKE_SLIDE_SLOW_ADJUST_POWER;
-        }
-        intakeSlideMotor.setPower(intakeMotorPower);
-        if (gamepad1.dpad_down) {
-            vertMotorPower = VERT_SLOW_DROP;
-        }
-        slideVertLeftMotor.setPower(vertMotorPower);
-        slideVertRightMotor.setPower(vertMotorPower);
-    }
-
-    private void setVertSlidesWithLeftStick() {
+    private void setVertSlidesManually(double power) {
 
         double slideLeftPower = 0;
         double slideRightPower = 0;
@@ -799,43 +879,18 @@ public class EbTeleOp extends OpMode {
         double rightPos = slideVertRightMotor.getCurrentPosition();
 
         if (leftPos > VERT_MIN_HEIGHT && leftPos < VERT_MAX_HEIGHT) {
-            slideLeftPower = gamepad2.right_stick_y;
+            slideLeftPower = power;
         }
         if (rightPos > VERT_MIN_HEIGHT && rightPos < VERT_MAX_HEIGHT) {
-            slideRightPower = gamepad2.right_stick_y;
+            slideRightPower = power;
         }
 
         slideVertRightMotor.setPower(slideRightPower);
         slideVertLeftMotor.setPower(slideLeftPower);
     }
 
-    private boolean hangSpecimenOnChamberRung() {
-        //lower specimen onto chamber rung
-        double pos = slideVertLeftMotor.getCurrentPosition();
-        double motorPower = 0;
-
-
-        slideVertLeftMotor.setPower(VERT_HANG_SPEED);
-        slideVertRightMotor.setPower(VERT_HANG_SPEED);
-
-        while (pos - slideVertLeftMotor.getCurrentPosition() < VERT_SPECIMEN_DROP) {
-
-        }
-
-        clawServo.setPosition(CLAW_OPEN);
-
-        slideVertLeftMotor.setPower(0);
-        slideVertRightMotor.setPower(0);
-
-        return true;
-    }
-
-    private void runEndGameLift() {
-
-    }
 
     @Override
     public void stop() {
     }
-
 }

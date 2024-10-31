@@ -19,8 +19,9 @@ public final class VerticalSlideConstants {
     static final double VERT_FAST_RAISE = 1;
     static final double VERT_SLOW_DROP = -.25;
     static final double VERT_FAST_DROP = -1;
-    static final double VERT_SPECIMEN_DROP = 100;
+    static final double VERT_SPECIMEN_DROP_HEIGHT = 100;
     static final double VERT_HANG_SPEED = .1;
+    static final double VERT_SLIDE_RECALIBRATE_SPEED = -.25;
 
     //Max and Min Heights
     static final double VERT_MAX_HEIGHT = 2800;
