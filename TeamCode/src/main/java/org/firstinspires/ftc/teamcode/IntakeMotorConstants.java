@@ -7,7 +7,8 @@ public final class IntakeMotorConstants {
 
     enum IntakeDirection {
         INTAKE,
-        EJECT
+        EJECT,
+        IDLE
     }
 
     private IntakeMotorConstants() {}
