@@ -2,10 +2,11 @@ package org.firstinspires.ftc.teamcode;
 
 public final class IntakeSlideConstants {
 
+    static final double INTAKE_SLIDE_MIN_EXTENSION = 5;
     static final double INTAKE_SLIDE_MAX_EXTENSION = 1600;
-    static final double INTAKE_SLIDE_EXCHANGE_POSITION = 100;
-    static final double INTAKE_SLIDE_MIN_EXTENSION_FOR_CLEARANCE = 400;
-    static final double INTAKE_SLIDE_SLOW_ADJUST_POWER = .25;
+    static final double INTAKE_SLIDE_EXCHANGE_POSITION = 10;
+    static final double INTAKE_SLIDE_CLEARANCE_EXTENSION = 50;
+    static final double INTAKE_SLIDE_SLOW_EXTEND_POWER = .25;
     static final double INTAKE_SLIDE_SLOW_RETRACT_POWER = -.25;
     static final double INTAKE_SLIDE_FAST_EXTEND_POWER = 1;
     static final double INTAKE_SLIDE_FAST_RETRACT_POWER = -1;

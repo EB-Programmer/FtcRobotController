@@ -3,13 +3,14 @@ package org.firstinspires.ftc.teamcode;
 public final class VerticalSlideConstants {
 
     //Standard height of objects in ticks
-    static final double VERT_PRE_EXCHANGE_HEIGHT = 200;
-    static final double VERT_MAKE_EXCHANGE_HEIGHT = 175;
-    static final double VERT_WALL_HEIGHT = 300;
-    static final double VERT_LOW_BASKET_HEIGHT = 1200;
-    static final double VERT_HIGH_BASKET_HEIGHT = 2800;
-    static final double VERT_LOW_CHAMBER_HEIGHT = 1000;
-    static final double VERT_HIGH_CHAMBER_HEIGHT = 2200;
+    static final double VERT_PRE_EXCHANGE_HEIGHT = 750;
+    static final double VERT_MAKE_EXCHANGE_HEIGHT = 500;
+    static final double VERT_WALL_HEIGHT = 100;
+    static final double VERT_LOW_BASKET_HEIGHT = 800;
+    static final double VERT_HIGH_BASKET_HEIGHT = 2500;
+    static final double VERT_LOW_CHAMBER_HEIGHT = 200;
+    static final double VERT_HIGH_CHAMBER_HEIGHT = 1600;
+    static final double VERT_SPECIMEN_DROP_DISTANCE = 100;
 
     //Allowable error margin
     static final double VERT_MARGIN_OF_ERROR = 40;
@@ -20,8 +21,6 @@ public final class VerticalSlideConstants {
     static final double VERT_FAST_RAISE = 1;
     static final double VERT_SLOW_DROP = -.25;
     static final double VERT_FAST_DROP = -1;
-    static final double VERT_SPECIMEN_DROP_DISTANCE = 100;
-    static final double VERT_HANG_SPECIMEN_SPEED = .1;
     static final double VERT_SLIDE_RECALIBRATE_SPEED = -.25;
 
     //Max and Min Heights
