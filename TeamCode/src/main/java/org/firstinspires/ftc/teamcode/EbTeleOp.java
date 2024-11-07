@@ -265,6 +265,7 @@ public class EbTeleOp extends OpMode {
                     preset = ClawArmPresetPosition.MakeExchangePreset();
                 }
                 powerVerticalSlides();
+                runIntakeSlide(intake_slide_power);
                 runIntakeMotor(getIntakeMotorDirectionFromController());
             } else {
                 runIntakeSlide(intake_slide_power);
