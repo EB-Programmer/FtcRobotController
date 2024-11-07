@@ -6,6 +6,7 @@ import static org.firstinspires.ftc.teamcode.IntakeSlideConstants.INTAKE_SLIDE_M
 import static org.firstinspires.ftc.teamcode.VerticalSlideConstants.VERT_MAX_HEIGHT;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -13,6 +14,8 @@ import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+
+@TeleOp(name = "EbTestRobotComponents", group = "Iterative Opmode")
 
 public class EbTestRobotComponents extends OpMode {
 
@@ -100,50 +103,36 @@ public class EbTestRobotComponents extends OpMode {
     @Override
     public void start() {
         super.start();
+        intakeSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
     }
 
     @Override
     public void loop() {
         final double POWER_PERCENT = .25;
 
-        double leftVertSlidePower = (gamepad1.dpad_left?1:0)*POWER_PERCENT;
-        double rightVertSlidePower = (gamepad1.dpad_right?1:0)*POWER_PERCENT;
-        double clawSlidePower = (gamepad1.dpad_up?1:0)*POWER_PERCENT;
-        double frontLeftMotorPower = (gamepad1.y?1:0)*POWER_PERCENT;
-        double frontRightMotorPower = (gamepad1.b?1:0)*POWER_PERCENT;
-        double backLeftMotorPower = (gamepad1.x?1:0)*POWER_PERCENT;
-        double backRightMotorPower = (gamepad1.a?1:0)*POWER_PERCENT;
+        double leftVertSlidePower = 0;
+        double rightVertSlidePower = 0;
 
-        if(usingIntake) {
-            if (gamepad1.right_bumper) {
-                usingIntake = false;
-            } else {
-                runIntakeMotor();
-            }
-        } else {
-            if (gamepad1.right_bumper) {
-                usingIntake = true;
-                runIntakeMotor();
-            }
+        if (gamepad1.dpad_up) {
+            leftVertSlidePower = POWER_PERCENT;
+            rightVertSlidePower = POWER_PERCENT;
+        }
+        if (gamepad1.dpad_down) {
+            leftVertSlidePower = -POWER_PERCENT;
+            rightVertSlidePower = -POWER_PERCENT;
+        }
+        telemetry.addData("Slide Position:", intakeSlideMotor.getCurrentPosition());
+        if (slideVertLeftMotor.getCurrentPosition()>VERT_MAX_HEIGHT) {
+            leftVertSlidePower = 0;
         }
 
-        if (slideVertLeftMotor.getCurrentPosition()<VERT_MAX_HEIGHT) {
-            slideVertLeftMotor.setPower(leftVertSlidePower);
+        if (slideVertRightMotor.getCurrentPosition()>VERT_MAX_HEIGHT) {
+            rightVertSlidePower = 0;
         }
 
-        if (slideVertRightMotor.getCurrentPosition()<VERT_MAX_HEIGHT) {
-            slideVertRightMotor.setPower(rightVertSlidePower);
-        }
-
-        if (intakeSlideMotor.getCurrentPosition()< INTAKE_SLIDE_MAX_EXTENSION) {
-            intakeSlideMotor.setPower(clawSlidePower);
-        }
-
-        frontLeftMotor.setPower(frontLeftMotorPower);
-        frontRightMotor.setPower(frontRightMotorPower);
-        backLeftMotor.setPower(backLeftMotorPower);
-        backRightMotor.setPower(backRightMotorPower);
-
+        slideVertRightMotor.setPower(rightVertSlidePower);
+        slideVertLeftMotor.setPower(leftVertSlidePower);
     }
 
     private void runIntakeMotor() {

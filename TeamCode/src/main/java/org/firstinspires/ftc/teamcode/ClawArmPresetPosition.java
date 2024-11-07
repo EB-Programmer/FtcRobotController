@@ -24,6 +24,16 @@ public class ClawArmPresetPosition {
                 VerticalSlideConstants.VERT_LOW_BASKET_HEIGHT);
     }
 
+    public static ClawArmPresetPosition HighBasketBackDropPreset() {
+        return new ClawArmPresetPosition(ClawConstants.CLAW_BACK_POUNCE_POSITION,
+                VerticalSlideConstants.VERT_HIGH_BASKET_HEIGHT);
+    }
+
+    public static ClawArmPresetPosition LowBasketBackDropPreset() {
+        return new ClawArmPresetPosition(ClawConstants.CLAW_BACK_POUNCE_POSITION,
+                VerticalSlideConstants.VERT_LOW_BASKET_HEIGHT);
+    }
+
     public static ClawArmPresetPosition HighChamberPreset() {
         return new ClawArmPresetPosition(ClawConstants.CLAW_CHAMBER_HANG_POSITION,
                 VerticalSlideConstants.VERT_HIGH_CHAMBER_HEIGHT);
