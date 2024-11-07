@@ -10,7 +10,6 @@ public final class VerticalSlideConstants {
     static final double VERT_HIGH_BASKET_HEIGHT = 2700;
     static final double VERT_LOW_CHAMBER_HEIGHT = 200;
     static final double VERT_HIGH_CHAMBER_HEIGHT = 1600;
-    static final double VERT_SPECIMEN_LIFT_DISTANCE = 300;
 
     //Allowable error margin
     static final double VERT_MARGIN_OF_ERROR = 40;
@@ -26,8 +25,6 @@ public final class VerticalSlideConstants {
     //Max and Min Heights
     static final double VERT_MAX_HEIGHT = 2700;
     static final double VERT_MIN_HEIGHT = 5;
-
-
 
     private VerticalSlideConstants() {}
 }

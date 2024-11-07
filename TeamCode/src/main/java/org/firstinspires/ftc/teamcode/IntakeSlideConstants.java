@@ -8,7 +8,6 @@ public final class IntakeSlideConstants {
     static final double INTAKE_SLIDE_SLOW_RETRACT_POWER = -.50;
     static final double INTAKE_SLIDE_SLOW_RETRACT_THRESHOLD = 150;
     static final double INTAKE_SLIDE_EXCHANGE_POSITION = 15;
-    static final double INTAKE_SLIDE_MARGIN_OF_ERROR = 5;
     static final double INTAKE_SLIDE_SLOW_DRIVE_POSITION = 200;
     private IntakeSlideConstants() {}
 }

@@ -1,7 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import static org.firstinspires.ftc.teamcode.ClawConstants.*;
-import static org.firstinspires.ftc.teamcode.GamePieceType.SAMPLE;
+import static org.firstinspires.ftc.teamcode.GamePieceType.*;
 import static org.firstinspires.ftc.teamcode.IntakeArmConstants.*;
 import static org.firstinspires.ftc.teamcode.IntakeMotorConstants.*;
 import static org.firstinspires.ftc.teamcode.IntakeMotorConstants.IntakeDirection.*;
@@ -38,16 +38,13 @@ public class EbTeleOp extends OpMode {
     private DigitalChannel intakeSwitch = null;
 
     //Class variables
-    private GamePieceType gamePiece = GamePieceType.NONE;
+    private GamePieceType gamePiece = NONE;
     private ClawArmPresetPosition preset = null;
     private ArrayList<Boolean> buttonValues = new ArrayList<Boolean>();
     private int buttonIncrement = 0;
     private int rCounter = 0;
     private int counter = 0;
     private int hangCounter = 0;
-
-    private final int CLICKS_TO_EJECT_SAMPLE = 30;
-
 
     //Button switch toggles
     private boolean left_bumper_is_pressed = false;
@@ -67,7 +64,6 @@ public class EbTeleOp extends OpMode {
     private boolean clawReadyForExchange = false;
     private boolean readyForExchange = false;
     private boolean clawIsOpen = true;
-    private boolean exchangeComplete = false;
     private boolean specimenHangInProgress = false;
     private double clawValue = CLAW_OPEN;
     private double clawArmValue = CLAW_EXCHANGE_POSITION;
@@ -103,7 +99,6 @@ public class EbTeleOp extends OpMode {
         slideVertRightMotor = hardwareMap.get(DcMotor.class, "Slide_right");
         slideVertRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         slideVertRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
 
         //Horizontal Intake Slide Motor
         intakeSlideMotor = hardwareMap.get(DcMotor.class, "Claw_slide");
@@ -151,49 +146,39 @@ public class EbTeleOp extends OpMode {
             D-Pad Left:
             A:              Drive Speed Normal
             B:              Drive Speed Slow
-            X:              (end game mode) Tilt Up
-            Y:              (end game mode) Tilt Down
+            X:
+            Y:
             Right Trigger:  Turn Right
             Left Trigger:   Turn left
             Right Bumper:
             Left Bumper:
-            Back (Select):  Toggle End Game
+            Back (Select):
 
         Gamepad 2:
             Right Stick:    Vertical Slide
-            Right Stick Button:  Wall preset
+            Right Stick Button:
             Left Stick:     Intake Operations (y position)
-            Left Stick Button:  Run Intake
+            Left Stick Button:  Toggle Active/Clearance on Intake
             D-Pad Up:
             D-Pad Right:    Cycle through Claw Arm Positions Right
             D-Pad Down:     Eject Sample from Intake
             D-Pad Left:     Cycle through Claw Arm Positions Left
-            A:              Lower Drop (Basket or Chamber) Preset
-            B:              Exchange preset (Claw and Vert)
-            X:              Upper Drop (Basket or Chamber) Preset
-            Y:              Wall Preset (Claw and Vert)
-            Right Trigger:  Manual Claw Arm Right
-            Left Trigger:   Manual Claw Arm Left
+            A:              PreExchange (NONE) or Low Back Drop (SAMPLE)
+            B:              Wall (NONE) or High Back Drop (SAMPLE or SPECIMEN)
+            X:              Low Front Drop (SAMPLE or SPECIMEN) Preset
+            Y:              High Front Drop (SAMPLE or SPECIMEN) Preset
+            Right Trigger:
+            Left Trigger:
             Right Bumper:
-            Left Bumper:    Claw operations
-            Back (Select):  Toggle Manual Mode
+            Left Bumper:    Toggle Exchange/Clearance on Intake
+            Back (Select):
          */
 
     @Override
     public void loop() {
 
-        /*
-        TEST THESE INDEPENDENTLY FIRST
-
-        executeDriveAction();
-        setRobotAction();
-        executeRobotAction();
-
-         */
-
         executeDriveActions();
-//        executeRobotActions();
-        revisedExecuteRobotActions();
+        executeRobotAction();
         buttonIncrement = 0;
 
         telemetry.addData("Vert Position:",
@@ -206,7 +191,7 @@ public class EbTeleOp extends OpMode {
                         ", intakeIsRetracting " + intakeIsRetracting +
                         ", intakeAtExchange " + intakeAtExchange +
                         ", clawIsOpen " + clawIsOpen +
-                        ", intakeArmValue " +  intakeArmValue +
+                        ", intakeArmValue " + intakeArmValue +
                         ", clawArmValue" + clawArmValue + " " + CLAW_EXCHANGE_POSITION +
                         ", clawReadyForExchange " + clawReadyForExchange +
                         ", readyForExchange " + readyForExchange +
@@ -241,7 +226,7 @@ public class EbTeleOp extends OpMode {
             intakeIsLoaded = intakeSwitch.getState();
         }
         intakeIsRetracting = intakeSlideMotor.getPower() < 0;
-        intakeSlideAtExchange= intakeSlideMotor.getCurrentPosition()<= INTAKE_SLIDE_EXCHANGE_POSITION;
+        intakeSlideAtExchange = intakeSlideMotor.getCurrentPosition() <= INTAKE_SLIDE_EXCHANGE_POSITION;
         intakeAtExchange = (intakeArmValue == INTAKE_ARM_EXCHANGE_POSITION);
         clawIsOpen = clawValue == CLAW_OPEN;
         clawReadyForExchange = (clawArmValue == CLAW_EXCHANGE_POSITION
@@ -252,77 +237,53 @@ public class EbTeleOp extends OpMode {
                 && intakeAtExchange
                 && intakeSlideAtExchange
                 && clawReadyForExchange;
-        specimenHangInProgress = clawArmValue == CLAW_CHAMBER_HANG_POSITION && hangCounter > 0;
+        specimenHangInProgress = (clawArmValue == CLAW_CHAMBER_HANG_POSITION) && (hangCounter > 0);
     }
 
-    private void revisedExecuteRobotActions() {
+    private void executeRobotAction() {
 
-        setToggleButtons();
-        setLogicalValues();
-        setPresetClawSlidePositions();
-        setSlidePowerValues();
+        readControllerToggleButtonPresses();  //sets whether a button was pushed for buttons related to servos
+        readControllerJoystickValues();  //sets the
+        setLogicalValues();  //manages the logical flow of the loop
+        setPresetClawPositions();  //sets the preset positions for claw arm servo
 
         if (gamePiece == SAMPLE) {
             if (intakeIsLoaded) {
                 ejectSampleFromIntake();
             } else {
-                dropSampleInBucket();
+                powerVerticalSlides();
+                setClawArmPosition();
+                releaseSample();
             }
         } else if (gamePiece == GamePieceType.SPECIMEN) {
-            hangSpecimenOnChamber();
+            powerVerticalSlides();
+            setClawArmPosition();
+            releaseSpecimen();
         } else {
             if (readyForExchange) {
-                makeExchange();
-            } else if (intakeIsLoaded) {
-                runIntakeMotor(getIntakeMotorDirectionFromController());
-                setVerticalSlidePosition();
-                if (intakeAtExchange && intakeSlideAtExchange) {
-                    moveClawArmToExchange();
-                } else if (intakeAtExchange) {
-                    moveClawArmToExchange();
-                    runIntakeSlide(intake_slide_power);
-                } else {
-                    moveClawArmToExchange();
-                    runIntakeSlide(intake_slide_power);
-                    setIntakeArmPosition();
+                if (right_bumper_is_pressed) {
+                    preset = ClawArmPresetPosition.MakeExchangePreset();
                 }
+                powerVerticalSlides();
+                runIntakeMotor(getIntakeMotorDirectionFromController());
             } else {
                 runIntakeSlide(intake_slide_power);
-                setIntakeArmPosition();
                 runIntakeMotor(getIntakeMotorDirectionFromController());
-                setVerticalSlidePosition();
-                setClawPositionWithController();
+                setIntakeArmPosition();
+                powerVerticalSlides();
                 setClawArmPosition();
-
+                toggleClawPosition();
             }
-
         }
-
     }
 
-    private void setClawPositionWithController() {
+    private void toggleClawPosition() {
         if (right_bumper_is_pressed) {
             if (clawIsOpen) {
                 setClawPosition(CLAW_CLOSE);
             } else {
                 setClawPosition(CLAW_OPEN);
             }
-        }
-    }
-
-    private void moveIntakeToExchange() {
-        runIntakeSlide(intake_slide_power);
-        setIntakeArmPosition();
-    }
-
-    private void moveClawArmToExchange() {
-        setVerticalSlidePosition();
-        setClawArmPosition();
-    }
-
-    private void makeExchange() {
-        if (right_bumper_is_pressed) {
-            preset = ClawArmPresetPosition.MakeExchangePreset();
         }
     }
 
@@ -334,7 +295,7 @@ public class EbTeleOp extends OpMode {
         }
     }
 
-    private void setVerticalSlidePosition() {
+    private void powerVerticalSlides() {
         if (vert_slide_power != 0) {
             runClawSlide(vert_slide_power);
             preset = null;
@@ -363,26 +324,14 @@ public class EbTeleOp extends OpMode {
         }
     }
 
-    private void dropSampleInBucket() {
-        setVerticalSlidePosition();
-        setClawArmPosition();
-        releaseSample();
-    }
-
-    private void hangSpecimenOnChamber() {
-        setVerticalSlidePosition();
-        setClawArmPosition();
-        releaseSpecimen();
-    }
-
     private void releaseSpecimen() {
         final int CLICKS_TO_HANG_SPECIMEN = 200;
-        if (clawArmValue == CLAW_CHAMBER_HANG_POSITION) {
+        if (clawArmValue == CLAW_CHAMBER_HANG_POSITION || clawArmValue==CLAW_WALL_SPECIMEN_POSITION) {
             if (right_bumper_is_pressed) {
                 hangCounter = 1;
             } else if (specimenHangInProgress) {
                 hangCounter++;
-                runIntakeSlide(VERT_FAST_RAISE);
+                runClawSlide(clawArmValue==CLAW_CHAMBER_HANG_POSITION?VERT_FAST_RAISE:VERT_FAST_DROP);
                 if (hangCounter > CLICKS_TO_HANG_SPECIMEN) {
                     setClawPosition(CLAW_OPEN);
                     hangCounter = 0;
@@ -405,6 +354,7 @@ public class EbTeleOp extends OpMode {
     private void ejectSampleFromIntake() {
         rCounter++;
         runIntakeMotor(EJECT);
+        int CLICKS_TO_EJECT_SAMPLE = 30;
         if (rCounter > CLICKS_TO_EJECT_SAMPLE) {
             if (intakeAtExchange) {
                 intakePivotArmServo.setPosition(INTAKE_ARM_RESTING_POSITION);
@@ -413,126 +363,7 @@ public class EbTeleOp extends OpMode {
         }
     }
 
-    private void executeRobotActions() {
-
-
-        /*
-        Check if toggle buttons have been pressed.  These all control servo actions,
-        so they should only run once when button is pressed.  Button maintains TRUE
-        while it is held down.
-         */
-        left_stick_button_pressed = isPressed(gamepad2.left_stick_button);
-        left_bumper_is_pressed = isPressed(gamepad2.left_bumper);
-        dpad_left_is_pressed = isPressed(gamepad2.dpad_left);
-        dpad_right_is_pressed = isPressed(gamepad2.dpad_right);
-        right_bumper_is_pressed = isPressed(gamepad2.right_bumper);
-
-        if (right_bumper_is_pressed) {
-            telemetry.addData("RIGHT BUTTON PRESSED", right_bumper_is_pressed);
-        }
-
-        if (preset == null) {
-            telemetry.addData("getting preset", "PRESET");
-            preset = getPresetFromController();
-        }
-
-        /*
-        Driver 2 Left Joy stick runs intake slide and is evaluated every cycle.
-        No presets for Intake Slide
-         */
-        if (!exchangeComplete) {
-            if (intakeIsLoaded && intakeAtExchange) {
-                if (intakeSlideMotor.getCurrentPosition() > INTAKE_SLIDE_EXCHANGE_POSITION) {
-                    runIntakeSlide(INTAKE_SLIDE_SLOW_RETRACT_POWER);
-                }
-            } else {
-                runIntakeSlide(-gamepad2.left_stick_y);
-            }
-        }
-
-        /*
-        Driver 2 Right Joy stick runs claw arm slide and is evaluated every cycle.
-        Power sets to Y position.  If it equals 0, then preset values are checked.
-        Preset values are set through the A, B, X, Y buttons on D2 controller
-         */
-        if (exchangeComplete && intakeIsLoaded) {
-            rCounter++;
-            runIntakeMotor(EJECT);
-            if (rCounter > 30) {
-                intakePivotArmServo.setPosition(INTAKE_ARM_RESTING_POSITION);
-                rCounter = 0;
-            }
-        } else if (gamepad2.right_stick_y != 0) {
-            runClawSlide(-gamepad2.right_stick_y);
-            preset = null;
-        } else if (preset != null) {
-            double clawSlideHeight = slideVertRightMotor.getCurrentPosition();
-            double hgt = preset.getSlideHeight();
-            telemetry.addData("Preset", clawSlideHeight + " " + hgt);
-            rotateClawArm(preset.getArmPosition());
-            if (clawSlideHeight < hgt) {
-                if (hgt - clawSlideHeight > VERT_SLOW_MOTOR_THRESHOLD) {
-                    runClawSlide(VERT_FAST_RAISE);
-                } else {
-                    runClawSlide(VERT_SLOW_RAISE);
-                }
-            } else if (clawSlideHeight > hgt + VERT_MARGIN_OF_ERROR) {
-                runClawSlide(VERT_SLOW_DROP);
-            } else {
-                if (preset.getSlideHeight() == VERT_MAKE_EXCHANGE_HEIGHT) {
-                    telemetry.addData("Ready for exchange:", true);
-                    readyForExchange = true;
-                }
-                runClawSlide(0);
-                preset = null;
-            }
-        } else {
-            if (slideVertRightMotor.getCurrentPosition() > 2500) {
-                runClawSlide(VERT_HOLD_POSITION_POWER);
-            } else {
-                runClawSlide(0);
-            }
-        }
-
-        /*
-        Intake Arm positions are set by the left_stick_button_pressed and
-        left_bumper_button_pressed booleans
-         */
-        setIntakeArmPosition();
-
-        //INTAKE MOTOR
-        runIntakeMotor(getIntakeMotorDirectionFromController());
-
-        //CLAW ARM MOTOR
-        if (preset == null) {
-            rotateClawArm(getClawArmPositionFromController());
-        }
-
-        //CLAW
-        if (readyForExchange) {
-            runIntakeSlide(0);
-            setClawPosition(CLAW_CLOSE);
-            rCounter = 0;
-        } else if (right_bumper_is_pressed) {
-            if (!clawIsOpen) {
-                if (clawArmValue == CLAW_BASKET_POUNCE_POSITION) {
-                    rotateClawArm(CLAW_BASKET_DROP_POSITION);
-                }
-                setClawPosition(CLAW_OPEN);
-                exchangeComplete = false;
-            } else if (intakeIsLoaded && intakeAtExchange) {
-                telemetry.addData("MakeExchangePreset:", slideVertRightMotor.getCurrentPosition());
-                preset = ClawArmPresetPosition.MakeExchangePreset();
-            } else {
-                setClawPosition(CLAW_CLOSE);
-                clawIsOpen = false;
-            }
-        } else {
-
-        }
-    }
-
-    private void setToggleButtons() {
+    private void readControllerToggleButtonPresses() {
         /*
         Toggle button presses.  These all control servo actions,
         so they should only run once when button is pressed.  Button maintains TRUE
@@ -551,7 +382,7 @@ public class EbTeleOp extends OpMode {
         if (buttonValues.size() == buttonIncrement) {
             buttonValues.add(false);
         }
-        if (button != buttonValues.get(buttonIncrement) && button == true) {
+        if (button != buttonValues.get(buttonIncrement) && button) {
             res = true;
         }
         buttonValues.set(buttonIncrement, button);
@@ -559,13 +390,13 @@ public class EbTeleOp extends OpMode {
         return res;
     }
 
-    private void setPresetClawSlidePositions() {
+    private void setPresetClawPositions() {
         if (preset == null) {
             preset = getPresetFromController();
         }
     }
 
-    private void setSlidePowerValues() {
+    private void readControllerJoystickValues() {
         vert_slide_power = -gamepad2.right_stick_y;
         intake_slide_power = -gamepad2.left_stick_y;
     }
@@ -595,6 +426,8 @@ public class EbTeleOp extends OpMode {
                 return ClawArmPresetPosition.WallGrabPreset();
             } else if (gamePiece == SAMPLE) {
                 return ClawArmPresetPosition.HighBasketBackDropPreset();
+            } else if (gamePiece == SPECIMEN) {
+                return ClawArmPresetPosition.HighChamberBackHangPreset();
             }
         }
         return null;
@@ -734,30 +567,23 @@ public class EbTeleOp extends OpMode {
             return;
         }
 
-        if (!intakeSwitch.getState()) {
-            counter = 0;
-        }
-
-        double pow = 0;
-
-        switch (intakeDirection) {
-            case INTAKE:
-                pow = INTAKE_MOTOR_POWER;
-                break;
-            case EJECT:
-                pow = INTAKE_MOTOR_EJECT_POWER;
-                break;
-            case IDLE:
-                pow = 0;
-        }
-        if (intakeIsLoaded && intakeDirection == EJECT) {
-            intakeFrameServo.setPower(pow);
-        }
-        if (counter > 30) {
-            intakeFrameServo.setPower(0);
+        if (intakeDirection == INTAKE) {
+            if (!intakeSwitch.getState()) {
+                counter = 0;
+            }
+            int CLICKS_TO_INTAKE_SAMPLE = 20;
+            if (counter > CLICKS_TO_INTAKE_SAMPLE) {
+                intakeFrameServo.setPower(0);
+            } else {
+                intakeFrameServo.setPower(INTAKE_MOTOR_POWER);
+                counter++;
+            }
         } else {
-            intakeFrameServo.setPower(pow);
-            counter++;
+            if (intakeSwitch.getState()) {
+                intakeFrameServo.setPower(INTAKE_MOTOR_EJECT_POWER);
+            } else {
+                intakeFrameServo.setPower(0);
+            }
         }
     }
 

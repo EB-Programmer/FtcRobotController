@@ -1,8 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
 public class ClawArmPresetPosition {
-    private double armPosition;
-    private double slideHeight;
+    private final double armPosition;
+    private final double slideHeight;
 
     private ClawArmPresetPosition(double armPosition, double slideHeight) {
         this.armPosition = armPosition;
@@ -34,6 +34,10 @@ public class ClawArmPresetPosition {
                 VerticalSlideConstants.VERT_LOW_BASKET_HEIGHT);
     }
 
+    public static ClawArmPresetPosition HighChamberBackHangPreset() {
+        return new ClawArmPresetPosition(ClawConstants.CLAW_WALL_SPECIMEN_POSITION,
+                VerticalSlideConstants.VERT_HIGH_CHAMBER_HEIGHT);
+    }
     public static ClawArmPresetPosition HighChamberPreset() {
         return new ClawArmPresetPosition(ClawConstants.CLAW_CHAMBER_HANG_POSITION,
                 VerticalSlideConstants.VERT_HIGH_CHAMBER_HEIGHT);
