@@ -9,6 +9,7 @@ public final class ClawConstants {
     static final double CLAW_BASKET_POUNCE_POSITION = .5;
     static final double CLAW_BACK_POUNCE_POSITION = .7;
     static final double CLAW_BACK_DROP_POSITION = .8;
+    static final double CLAW_BACK_CHAMBER_HANG_POSITION = .95;
     static final double CLAW_WALL_SPECIMEN_POSITION = 1;
 
     //claw positions

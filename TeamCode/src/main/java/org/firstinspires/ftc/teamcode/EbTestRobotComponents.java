@@ -135,23 +135,5 @@ public class EbTestRobotComponents extends OpMode {
         slideVertLeftMotor.setPower(leftVertSlidePower);
     }
 
-    private void runIntakeMotor() {
-        double motorPower = 0;
-        usingIntake = true;
-        if (intakeIsRunning) {
-            if (intakeMotorTimer.time() < INTAKE_MOTOR_REVOLUTION_TIME) {
-                motorPower = INTAKE_MOTOR_POWER;
-            } else {
-                intakeIsRunning = false;
-                intakeMotorTimer.reset();
-            }
-        } else {
-            if (intakeMotorTimer.time() > INTAKE_MOTOR_REVOLUTION_TIME) {
-                motorPower = INTAKE_MOTOR_POWER;
-                intakeMotorTimer.reset();
-            }
-        }
-        intakeFrameServo.setPower(motorPower);
-    }
 
 }

@@ -45,6 +45,7 @@ public class EbTeleOp extends OpMode {
     private int rCounter = 0;
     private int counter = 0;
     private int hangCounter = 0;
+    private int dropCounter = 0;
 
     //Button switch toggles
     private boolean left_bumper_is_pressed = false;
@@ -52,6 +53,10 @@ public class EbTeleOp extends OpMode {
     private boolean dpad_left_is_pressed = false;
     private boolean dpad_right_is_pressed = false;
     private boolean right_bumper_is_pressed = false;
+    private boolean g1_dpad_down_is_pressed = false;
+    private boolean g1_dpad_up_is_pressed = false;
+    private boolean g1_right_stick_button_is_pressed = false;
+
     private double vert_slide_power = 0;
     private double intake_slide_power = 0;
 
@@ -65,6 +70,9 @@ public class EbTeleOp extends OpMode {
     private boolean readyForExchange = false;
     private boolean clawIsOpen = true;
     private boolean specimenHangInProgress = false;
+    private boolean dropInProgress = false;
+    private boolean toggleSwitchOverride = false;
+    private boolean ignoreSwitchOverride = true;
     private double clawValue = CLAW_OPEN;
     private double clawArmValue = CLAW_EXCHANGE_POSITION;
     private double intakeArmValue = INTAKE_ARM_RESTING_POSITION;
@@ -130,7 +138,9 @@ public class EbTeleOp extends OpMode {
         gamePiece = GamePieceType.NONE;
         drivePowerPercent = 1;
         clawServo.setPosition(CLAW_OPEN);
-        clawArmValue = CLAW_WALL_SPECIMEN_POSITION;
+        clawPivotArmServo.setPosition(CLAW_BASKET_POUNCE_POSITION);
+        intakePivotArmServo.setPosition(INTAKE_ARM_RESTING_POSITION);
+        preset = ClawArmPresetPosition.WallGrabPreset();
     }
 
         /*
@@ -142,7 +152,7 @@ public class EbTeleOp extends OpMode {
             Left Stick Button:
             D-Pad Up:
             D-Pad Right:
-            D-Pad Down:
+            D-Pad Down:     Manually toggle gamepiece type
             D-Pad Left:
             A:              Drive Speed Normal
             B:              Drive Speed Slow
@@ -185,6 +195,11 @@ public class EbTeleOp extends OpMode {
                 slideVertLeftMotor.getCurrentPosition() +
                         ":" + slideVertRightMotor.getCurrentPosition());
         telemetry.addData("Intake Position:", intakeSlideMotor.getCurrentPosition());
+        telemetry.addData("Game Piece", gamePiece.name());
+        telemetry.addData("Intake Switch", intakeSwitch.getState() && ignoreSwitchOverride);
+        telemetry.addData("toggleSwitchOverride", toggleSwitchOverride);
+        telemetry.addData("ignoreSwitchOverride", ignoreSwitchOverride);
+        /*
         telemetry.addData("Variables",
                 "intakeIsActive " + intakeIsActive +
                         ", intakeIsLoaded " + intakeIsLoaded +
@@ -197,7 +212,8 @@ public class EbTeleOp extends OpMode {
                         ", readyForExchange " + readyForExchange +
                         ", switch engaged " + intakeSwitch.getState() +
                         ", gamePiece " + gamePiece.name() +
-                        "counter " + counter);
+                        "counter " + counter);*/
+
     }
 
     private void executeDriveActions() {
@@ -216,16 +232,31 @@ public class EbTeleOp extends OpMode {
                 gamepad1.left_stick_x,
                 gamepad1.left_trigger,
                 gamepad1.right_trigger);
+
+        if (gamepad1.back) {
+            slideVertLeftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            slideVertLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            slideVertRightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            slideVertRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        }
+    }
+
+    private void checkForOverrides() {
+        manuallyOverrideGamePiece();
+        manuallyOverrideIntakeSwitch();
     }
 
     private void setLogicalValues() {
+
+        final int INTAKE_TICK_COUNT = 15;
+
         intakeIsActive = (intakeArmValue == INTAKE_ARM_ACTIVE_POSITION);
         if (intakeIsActive) {
-            intakeIsLoaded = intakeSwitch.getState() && counter > 30;
+            intakeIsLoaded = intakeSwitch.getState() && ignoreSwitchOverride && counter > INTAKE_TICK_COUNT;
         } else {
-            intakeIsLoaded = intakeSwitch.getState();
+            intakeIsLoaded = intakeSwitch.getState() && ignoreSwitchOverride;
         }
-        intakeIsRetracting = intakeSlideMotor.getPower() < 0;
+        intakeIsRetracting = (intakeSlideMotor.getPower() < 0 && intakeIsLoaded);
         intakeSlideAtExchange = intakeSlideMotor.getCurrentPosition() <= INTAKE_SLIDE_EXCHANGE_POSITION;
         intakeAtExchange = (intakeArmValue == INTAKE_ARM_EXCHANGE_POSITION);
         clawIsOpen = clawValue == CLAW_OPEN;
@@ -237,26 +268,52 @@ public class EbTeleOp extends OpMode {
                 && intakeAtExchange
                 && intakeSlideAtExchange
                 && clawReadyForExchange;
+        dropInProgress = (dropCounter > 0);
         specimenHangInProgress = (clawArmValue == CLAW_CHAMBER_HANG_POSITION) && (hangCounter > 0);
+    }
+
+    private void manuallyOverrideGamePiece() {
+        if (g1_dpad_down_is_pressed) {
+            if (gamePiece == SAMPLE) {
+                gamePiece = SPECIMEN;
+            } else if (gamePiece == SPECIMEN) {
+                gamePiece = NONE;
+            } else {
+                gamePiece = SAMPLE;
+            }
+        }
+    }
+
+    private void manuallyOverrideIntakeSwitch() {
+        if (g1_dpad_up_is_pressed) {
+            toggleSwitchOverride = !toggleSwitchOverride;
+        }
+        if (toggleSwitchOverride) {
+            if (g1_right_stick_button_is_pressed) {
+                ignoreSwitchOverride = !ignoreSwitchOverride;
+            }
+        }
     }
 
     private void executeRobotAction() {
 
         readControllerToggleButtonPresses();  //sets whether a button was pushed for buttons related to servos
-        readControllerJoystickValues();  //sets the
+        readControllerJoystickValues();  //sets the power values for motors
+        checkForOverrides();
         setLogicalValues();  //manages the logical flow of the loop
-        setPresetClawPositions();  //sets the preset positions for claw arm servo
+        setPresetClawPositions();  //sets the preset positions for claw arm servo and motor
 
         if (gamePiece == SAMPLE) {
             if (intakeIsLoaded) {
                 ejectSampleFromIntake();
             } else {
-                powerVerticalSlides();
+                ejectSampleFromIntake();
+                setPowerVerticalSlides();
                 setClawArmPosition();
                 releaseSample();
             }
         } else if (gamePiece == GamePieceType.SPECIMEN) {
-            powerVerticalSlides();
+            setPowerVerticalSlides();
             setClawArmPosition();
             releaseSpecimen();
         } else {
@@ -264,14 +321,17 @@ public class EbTeleOp extends OpMode {
                 if (right_bumper_is_pressed) {
                     preset = ClawArmPresetPosition.MakeExchangePreset();
                 }
-                powerVerticalSlides();
+                setPowerVerticalSlides();
                 runIntakeSlide(intake_slide_power);
                 runIntakeMotor(getIntakeMotorDirectionFromController());
             } else {
                 runIntakeSlide(intake_slide_power);
                 runIntakeMotor(getIntakeMotorDirectionFromController());
                 setIntakeArmPosition();
-                powerVerticalSlides();
+                if (intakeIsRetracting) {
+                    preset = ClawArmPresetPosition.PreExchangePreset();
+                }
+                setPowerVerticalSlides();
                 setClawArmPosition();
                 toggleClawPosition();
             }
@@ -279,7 +339,21 @@ public class EbTeleOp extends OpMode {
     }
 
     private void toggleClawPosition() {
-        if (right_bumper_is_pressed) {
+        if (preset != null) {
+            if (preset.getSlideHeight() == VERT_MAKE_EXCHANGE_HEIGHT
+                    && slideVertRightMotor.getCurrentPosition() <= VERT_MAKE_EXCHANGE_HEIGHT + VERT_MARGIN_OF_ERROR) {
+
+                setClawPosition(CLAW_CLOSE);
+                preset = null;
+
+            } else if (right_bumper_is_pressed) {
+                if (clawIsOpen) {
+                    setClawPosition(CLAW_CLOSE);
+                } else {
+                    setClawPosition(CLAW_OPEN);
+                }
+            }
+        } else if (right_bumper_is_pressed) {
             if (clawIsOpen) {
                 setClawPosition(CLAW_CLOSE);
             } else {
@@ -296,71 +370,72 @@ public class EbTeleOp extends OpMode {
         }
     }
 
-    private void powerVerticalSlides() {
+    private void setPowerVerticalSlides() {
         if (vert_slide_power != 0) {
+            slideVertLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            slideVertRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             runClawSlide(vert_slide_power);
             preset = null;
         } else if (preset != null) {
-            double clawSlideHeight = slideVertRightMotor.getCurrentPosition();
-            double hgt = preset.getSlideHeight();
-            if (clawSlideHeight < hgt) {
-                runClawSlide(VERT_FAST_RAISE);
-            } else if (clawSlideHeight > hgt + VERT_SLOW_MOTOR_THRESHOLD) {
-                runClawSlide(VERT_FAST_DROP);
-            } else if (clawSlideHeight > hgt + VERT_MARGIN_OF_ERROR) {
-                runClawSlide(VERT_SLOW_DROP);
-            } else {
-                if (preset.getSlideHeight() == VERT_MAKE_EXCHANGE_HEIGHT) {
-                    setClawPosition(CLAW_CLOSE);
-                }
-                runClawSlide(0);
+            if (!slideVertRightMotor.isBusy() && !slideVertLeftMotor.isBusy()) {
+                slideVertLeftMotor.setTargetPosition((int) preset.getSlideHeight());
+                slideVertRightMotor.setTargetPosition((int) preset.getSlideHeight());
+                slideVertLeftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                slideVertRightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                slideVertLeftMotor.setPower(VERT_FAST_RAISE);
+                slideVertRightMotor.setPower(VERT_FAST_RAISE);
+            } else if (preset.getName() == "Wall Grab") {
                 preset = null;
             }
+
         } else {
-            if (slideVertRightMotor.getCurrentPosition() >= VERT_HIGH_BASKET_HEIGHT) {
-                runClawSlide(VERT_HOLD_POSITION_POWER);
-            } else {
-                runClawSlide(0);
-            }
+            slideVertLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            slideVertRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            runClawSlide(0);
         }
     }
 
     private void releaseSpecimen() {
         final int CLICKS_TO_HANG_SPECIMEN = 200;
-        if (clawArmValue == CLAW_CHAMBER_HANG_POSITION || clawArmValue==CLAW_WALL_SPECIMEN_POSITION) {
+        if (right_bumper_is_pressed) {
+            setClawPosition(CLAW_OPEN);
+        }
+        /*
+        if (clawArmValue == CLAW_CHAMBER_HANG_POSITION || clawArmValue == CLAW_BACK_CHAMBER_HANG_POSITION) {
             if (right_bumper_is_pressed) {
                 hangCounter = 1;
+                vert_slide_power = clawArmValue == CLAW_CHAMBER_HANG_POSITION ? VERT_FAST_RAISE : VERT_FAST_DROP;
             } else if (specimenHangInProgress) {
                 hangCounter++;
-                runClawSlide(clawArmValue==CLAW_CHAMBER_HANG_POSITION?VERT_FAST_RAISE:VERT_FAST_DROP);
+                vert_slide_power = clawArmValue == CLAW_CHAMBER_HANG_POSITION ? VERT_FAST_RAISE : VERT_FAST_DROP;
                 if (hangCounter > CLICKS_TO_HANG_SPECIMEN) {
                     setClawPosition(CLAW_OPEN);
                     hangCounter = 0;
+                    preset = null;
                 }
             }
-        }
+        } else {
+            if (right_bumper_is_pressed) {
+                setClawPosition(CLAW_OPEN);
+            }
+        }*/
     }
 
     private void releaseSample() {
         if (right_bumper_is_pressed) {
-            if (clawArmValue == CLAW_BASKET_POUNCE_POSITION) {
-                rotateClawArm(CLAW_BASKET_DROP_POSITION);
-            } else if (clawArmValue == CLAW_BACK_POUNCE_POSITION) {
-                rotateClawArm(CLAW_BACK_DROP_POSITION);
-            }
             setClawPosition(CLAW_OPEN);
+            preset = null;
         }
     }
 
     private void ejectSampleFromIntake() {
-        rCounter++;
-        runIntakeMotor(EJECT);
-        int CLICKS_TO_EJECT_SAMPLE = 30;
-        if (rCounter > CLICKS_TO_EJECT_SAMPLE) {
+        if (intakeIsLoaded) {
+            runIntakeMotor(EJECT);
+        } else {
             if (intakeAtExchange) {
                 intakePivotArmServo.setPosition(INTAKE_ARM_RESTING_POSITION);
             }
-            rCounter = 0;
+            runIntakeMotor(IDLE);
         }
     }
 
@@ -375,7 +450,9 @@ public class EbTeleOp extends OpMode {
         dpad_left_is_pressed = isPressed(gamepad2.dpad_left);
         dpad_right_is_pressed = isPressed(gamepad2.dpad_right);
         right_bumper_is_pressed = isPressed(gamepad2.right_bumper);
-
+        g1_dpad_down_is_pressed = isPressed(gamepad1.dpad_down);
+        g1_dpad_up_is_pressed = isPressed(gamepad1.dpad_up);
+        g1_right_stick_button_is_pressed = isPressed(gamepad1.right_stick_button);
     }
 
     private boolean isPressed(boolean button) {
@@ -392,9 +469,7 @@ public class EbTeleOp extends OpMode {
     }
 
     private void setPresetClawPositions() {
-        if (preset == null) {
-            preset = getPresetFromController();
-        }
+        preset = getPresetFromController();
     }
 
     private void readControllerJoystickValues() {
@@ -403,35 +478,42 @@ public class EbTeleOp extends OpMode {
     }
 
     private ClawArmPresetPosition getPresetFromController() {
-
         if (gamepad2.y) {
             if (gamePiece == SAMPLE) {
                 return ClawArmPresetPosition.HighBasketPreset();
             } else if (gamePiece == GamePieceType.SPECIMEN) {
                 return ClawArmPresetPosition.HighChamberPreset();
+            } else {
+                return null;
             }
         } else if (gamepad2.x) {
             if (gamePiece == SAMPLE) {
-                return ClawArmPresetPosition.LowBasketPreset();
+                return ClawArmPresetPosition.HighBasketBackDropPreset();
             } else if (gamePiece == GamePieceType.SPECIMEN) {
                 return ClawArmPresetPosition.LowChamberPreset();
+            } else {
+                return null;
             }
         } else if (gamepad2.a) {
             if (gamePiece == GamePieceType.NONE) {
                 return ClawArmPresetPosition.PreExchangePreset();
             } else if (gamePiece == SAMPLE) {
                 return ClawArmPresetPosition.LowBasketBackDropPreset();
+            } else {
+                return null;
             }
         } else if (gamepad2.b) {
             if (gamePiece == GamePieceType.NONE) {
                 return ClawArmPresetPosition.WallGrabPreset();
             } else if (gamePiece == SAMPLE) {
-                return ClawArmPresetPosition.HighBasketBackDropPreset();
+                return ClawArmPresetPosition.LowBasketPreset();
             } else if (gamePiece == SPECIMEN) {
                 return ClawArmPresetPosition.HighChamberBackHangPreset();
+            } else {
+                return null;
             }
         }
-        return null;
+        return preset;
     }
 
     private IntakeMotorConstants.IntakeDirection getIntakeMotorDirectionFromController() {
@@ -533,32 +615,29 @@ public class EbTeleOp extends OpMode {
 
     private void runClawSlide(double power) {
 
-        double pos = slideVertRightMotor.getCurrentPosition();
-        double pow = 0;
+        double rPow = getSlidePower(slideVertRightMotor.getCurrentPosition(), power);
+        double lPow = getSlidePower(slideVertLeftMotor.getCurrentPosition(), power);
 
-        // if intake is retracting, then get the vert slide to the exchange height
-        if (intakeIsRetracting) {
-            if (pos < VERT_PRE_EXCHANGE_HEIGHT - VERT_MARGIN_OF_ERROR) {
-                pow = VERT_SLOW_RAISE;
-            } else if (pos > VERT_PRE_EXCHANGE_HEIGHT + VERT_MARGIN_OF_ERROR) {
-                pow = VERT_SLOW_DROP;
-            }
+        slideVertRightMotor.setPower(rPow);
+        slideVertLeftMotor.setPower(lPow);
+    }
+
+    private double getSlidePower(double position, double power) {
+
+        double pow = 0;
+        //STOP retracting if position is less than the MIN_HEIGHT
+        if (position <= VERT_MIN_HEIGHT && power < 0) {
+            pow = 0;
+            //STOP extending if position is greater than MAX_HEIGHT
+        } else if (position >= VERT_MAX_HEIGHT && power > 0) {
+            pow = 0;
+            //SLOW retracting if position is less than SLOW_THRESHOLD
+        } else if (position < VERT_SLOW_MOTOR_THRESHOLD && power < 0) {
+            pow = VERT_SLOW_DROP;
         } else {
-            //STOP retracting if position is less than the MIN_HEIGHT
-            if (pos <= VERT_MIN_HEIGHT && power < 0) {
-                pow = 0;
-                //STOP extending if position is greater than MAX_HEIGHT
-            } else if (pos >= VERT_MAX_HEIGHT && power > 0) {
-                pow = 0;
-                //SLOW retracting if position is less than SLOW_THRESHOLD
-            } else if (pos < VERT_SLOW_MOTOR_THRESHOLD && power < 0) {
-                pow = VERT_SLOW_DROP;
-            } else {
-                pow = power;
-            }
+            pow = power;
         }
-        slideVertRightMotor.setPower(pow);
-        slideVertLeftMotor.setPower(pow);
+        return pow;
     }
 
     private void runIntakeMotor(IntakeMotorConstants.IntakeDirection intakeDirection) {
@@ -569,7 +648,7 @@ public class EbTeleOp extends OpMode {
         }
 
         if (intakeDirection == INTAKE) {
-            if (!intakeSwitch.getState()) {
+            if (!(intakeSwitch.getState() && ignoreSwitchOverride)) {
                 counter = 0;
             }
             int CLICKS_TO_INTAKE_SAMPLE = 20;
@@ -580,7 +659,7 @@ public class EbTeleOp extends OpMode {
                 counter++;
             }
         } else {
-            if (intakeSwitch.getState()) {
+            if (intakeSwitch.getState() && ignoreSwitchOverride) {
                 intakeFrameServo.setPower(INTAKE_MOTOR_EJECT_POWER);
             } else {
                 intakeFrameServo.setPower(0);
