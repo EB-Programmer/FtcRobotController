@@ -46,7 +46,7 @@ public class ClawArmPresetPosition {
     }
 
     public static ClawArmPresetPosition LowChamberPreset() {
-        return new ClawArmPresetPosition(ClawConstants.CLAW_ARM_CHAMBER_HANG_POSITION,
+        return new ClawArmPresetPosition(ClawConstants.CLAW_ARM_CHAMBER_HANG_POSITION + ClawConstants.CLAW_ARM_LOW_CHAMBER_OFFSET,
                 VerticalSlideConstants.VERT_LOW_CHAMBER_HEIGHT, "Low Chamber");
     }
 
